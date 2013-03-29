@@ -36,4 +36,5 @@ max_fv = max(fv);
 for n = 1:N
     fv(n,:) = (fv(n,:) - min_fv)./(max_fv - min_fv);
 end
+fprintf('Done computing feature vector.\n');
 end
