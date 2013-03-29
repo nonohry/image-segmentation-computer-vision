@@ -1,39 +1,44 @@
-function [I em_cluster in_log_lf cpl_log_lf] = em_e_step(fv, K, alpha, nuy, sigma, xik)
+function [I em_map icLogLF cLogLF psa] = em_e_step(fv, K, alpha, nuy, sigma, truthImg, cur_map)
 % EM_E_STEP: do e_step in EM
 % TuanND
 % 03/23
-fprintf('\t EM E-Steps...\n');
+fprintf('E-Steps:[4/4]');
 [num_pixel dim] = size(fv);
+[rows cols] = size(truthImg);
+xik = zeros(num_pixel, K);
+for i = 1:rows
+    for j = 1:cols
+        k = cur_map(i,j);
+        xik((i-1)*cols + j, k) = 1;
+    end
+end
 I = zeros(num_pixel, K);
-lf  = zeros(num_pixel, K);
-fprintf('\t\tLikelihood Function:[4/4]');
-for k = 1:K
-    fprintf('\b\b\b\b\b[%1u/%1u]-',k, K);
-    sk = sigma{k};
-    detsigma = det(sk);
-    if(detsigma == 0)
-        fprintf('\n det(sk) = 0\n');
-        return;
-    end
-    dem = ((2*pi)^(dim/2)) * sqrt(detsigma);
-    fprintf('[65536/65536]');
-    for i = 1:num_pixel        
-        fprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b[%05u/%05u]', i, num_pixel);
-        dif = fv(i,:) - nuy(k,:);        
-        lf(i,k) = exp(-(1/2) * dif / sk * dif')/dem;
-    end
-    fprintf('\n');
+pLF  = zeros(num_pixel, K);
+for m = 1:K
+    fprintf('\b\b\b\b\b');
+    fprintf('[%1u/%1u]',m, K);
+    sk = sigma{m};
+    det_sigma = det(sk);
+    denominator = ((2*pi)^(dim/2)) * sqrt(det_sigma);        
+    for l = 1:num_pixel          
+        dif = fv(l,:) - nuy(m,:);        
+        pLF(l,m) = exp(-(1/2) * dif / sk * dif')/denominator;
+    end    
 end
-fprintf('\n');
-in_log_lf = 0;
-cpl_log_lf = 0;
-for i = 1:num_pixel
-    norm_dem = sum(lf(i,:).*alpha');
-    in_log_lf = in_log_lf + log(norm_dem);
-    for k = 1:K
-        I(i,k) = alpha(k) * lf(i,k)/norm_dem;
-        cpl_log_lf = cpl_log_lf + xik(i,k) * log(alpha(k) * lf(i,k));
+icLogLF = 0;
+cLogLF = 0;
+for l = 1:num_pixel
+    norm_denominator = sum(pLF(l,:).*alpha');
+    icLogLF = icLogLF + log(norm_denominator);
+    for m = 1:K
+        I(l,m) = alpha(m) * pLF(l,m)/norm_denominator;
+        if(alpha(m) * pLF(l,m) ~= 0)
+            cLogLF = cLogLF + xik(l,m) * log(alpha(m) * pLF(l,m));
+        end
+        
     end
 end
-[dummy em_cluster] = max(I,[],2);
+[max_prob em_map] = max(I,[],2);
+em_map = reshape(em_map, cols, rows)';
+psa = accuracy(truthImg, em_map, K);
 end

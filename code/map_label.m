@@ -1,4 +1,5 @@
 function xik = map_label(truthImg,resultMap,K)
+truthImg = double(truthImg);
 [rows cols]=size(truthImg);
 Z=zeros(256,256);
 for i=1:rows
@@ -13,7 +14,7 @@ xik = zeros(num_pixel, K);
 [C I] = max(Z);
 for k = 1:K
     mk = I(k)-1;
-    [r c] = find(resultMap == mk);
+    [r c] = find(truthImg == mk);
     idx = (r-1)*cols + c;
     xik(idx,k) = 1;
 end
